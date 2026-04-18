@@ -53,14 +53,13 @@ def collate_fn(batch):
 
 def Greedy_Decode_Eval(Net, datasets, args):
     # TestNet = Net.eval()
-    epoch_size = len(datasets)
     batch_iterator = iter(DataLoader(datasets, 1, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn))
 
     Tp = 0
     Tn_1 = 0
     Tn_2 = 0
     t1 = time.time()
-    for i in range(epoch_size):
+    for i in range(len(datasets)):
         # load train data
         images, labels, lengths = next(batch_iterator)
         start = 0
@@ -120,19 +119,12 @@ def show(img, label, target):
     img = img.astype(np.uint8)
 
     lb = ""
-    for i in label:
-        lb += CHARS[i]
+    for i in label: lb += CHARS[i]
     tg = ""
-    for j in target.tolist():
-        tg += CHARS[int(j)]
+    for j in target.tolist(): tg += CHARS[int(j)]
 
-    flag = "F"
-    if lb == tg:
-        flag = "T"
-    # img = cv2.putText(img, lb, (0,16), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.6, (0, 0, 255), 1)
     img = cv2ImgAddText(img, lb, (0, 0))
     cv2.imshow("test", img)
-    print("target: ", tg, " ### {} ### ".format(flag), "predict: ", lb)
     cv2.waitKey()
     cv2.destroyAllWindows()
 
