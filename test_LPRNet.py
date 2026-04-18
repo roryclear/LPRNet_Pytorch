@@ -31,7 +31,6 @@ def get_parser():
     parser.add_argument('--test_batch_size', default=100, help='testing batch size.')
     parser.add_argument('--phase_train', default=False, type=bool, help='train or test phase flag.')
     parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
-    parser.add_argument('--cuda', default=True, type=bool, help='Use cuda to train model')
     parser.add_argument('--show', default=False, type=bool, help='show test image and its predict result or not.')
     parser.add_argument('--pretrained_model', default='./weights/Final_LPRNet_model.pth', help='pretrained base model')
 
@@ -56,17 +55,11 @@ def test():
     args = get_parser()
 
     lprnet = build_lprnet(lpr_max_len=args.lpr_max_len, phase=args.phase_train, class_num=len(CHARS), dropout_rate=args.dropout_rate)
-    device = torch.device("cuda:0" if args.cuda else "cpu")
+    device = torch.device("cpu")
     lprnet.to(device)
     print("Successful to build network!")
 
-    # load pretrained model
-    if args.pretrained_model:
-        lprnet.load_state_dict(torch.load(args.pretrained_model))
-        print("load pretrained model successful!")
-    else:
-        print("[Error] Can't found pretrained mode, please check!")
-        return False
+    lprnet.load_state_dict(torch.load(args.pretrained_model, map_location=torch.device('cpu')))
 
     test_img_dirs = os.path.expanduser(args.test_img_dirs)
     test_dataset = LPRDataLoader(test_img_dirs.split(','), args.img_size, args.lpr_max_len)
@@ -95,11 +88,7 @@ def Greedy_Decode_Eval(Net, datasets, args):
             start += length
         targets = np.array([el.numpy() for el in targets])
         imgs = images.numpy().copy()
-
-        if args.cuda:
-            images = Variable(images.cuda())
-        else:
-            images = Variable(images)
+        images = Variable(images)
 
         # forward
         prebs = Net(images)
