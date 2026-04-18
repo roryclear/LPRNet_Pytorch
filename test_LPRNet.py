@@ -51,27 +51,10 @@ def collate_fn(batch):
 
     return (torch.stack(imgs, 0), torch.from_numpy(labels), lengths)
 
-def test():
-    args = get_parser()
-
-    lprnet = build_lprnet(lpr_max_len=args.lpr_max_len, phase=args.phase_train, class_num=len(CHARS), dropout_rate=args.dropout_rate)
-    device = torch.device("cpu")
-    lprnet.to(device)
-    print("Successful to build network!")
-
-    lprnet.load_state_dict(torch.load(args.pretrained_model, map_location=torch.device('cpu')))
-
-    test_img_dirs = os.path.expanduser(args.test_img_dirs)
-    test_dataset = LPRDataLoader(test_img_dirs.split(','), args.img_size, args.lpr_max_len)
-    try:
-        Greedy_Decode_Eval(lprnet, test_dataset, args)
-    finally:
-        cv2.destroyAllWindows()
-
 def Greedy_Decode_Eval(Net, datasets, args):
     # TestNet = Net.eval()
-    epoch_size = len(datasets) // args.test_batch_size
-    batch_iterator = iter(DataLoader(datasets, args.test_batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn))
+    epoch_size = len(datasets)
+    batch_iterator = iter(DataLoader(datasets, 1, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn))
 
     Tp = 0
     Tn_1 = 0
@@ -112,10 +95,12 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 no_repeat_blank_label.append(c)
                 pre_c = c
             preb_labels.append(no_repeat_blank_label)
+
+        
+
         for i, label in enumerate(preb_labels):
             # show image and its predict label
-            if args.show:
-                show(imgs[i], label, targets[i])
+            show(imgs[i], label, targets[i])
             if len(label) != len(targets[i]):
                 Tn_1 += 1
                 continue
@@ -162,4 +147,18 @@ def cv2ImgAddText(img, text, pos, textColor=(255, 0, 0), textSize=12):
 
 
 if __name__ == "__main__":
-    test()
+    args = get_parser()
+
+    lprnet = build_lprnet(lpr_max_len=args.lpr_max_len, phase=args.phase_train, class_num=len(CHARS), dropout_rate=args.dropout_rate)
+    device = torch.device("cpu")
+    lprnet.to(device)
+    print("Successful to build network!")
+
+    lprnet.load_state_dict(torch.load(args.pretrained_model, map_location=torch.device('cpu')))
+
+    test_img_dirs = os.path.expanduser(args.test_img_dirs)
+    test_dataset = LPRDataLoader(test_img_dirs.split(','), args.img_size, args.lpr_max_len)
+    try:
+        Greedy_Decode_Eval(lprnet, test_dataset, args)
+    finally:
+        cv2.destroyAllWindows()
